@@ -1,0 +1,11 @@
+-file("test_define.erl", 1).
+
+-module(test_define).
+
+-compile([export_all]).
+
+test() ->
+    no_heheaa.
+
+
+

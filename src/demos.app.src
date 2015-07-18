@@ -1,0 +1,12 @@
+{application, demos,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { demos_app, []}},
+  {env, []}
+ ]}.
