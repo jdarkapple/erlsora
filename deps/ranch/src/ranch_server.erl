@@ -13,7 +13,7 @@
 		 set_max_connections/2,
 		 get_max_connections/1,
 		 set_protocol_options/2,
-		 set_protocol_options/1,
+		 get_protocol_options/1,
 		 count_connections/1
 		]).
 
@@ -77,9 +77,20 @@ set_max_connections(Ref, MaxConnections) ->
 get_max_connections(Ref) ->
 	ets:lookup_element(?TAB, {max_conns, Ref}, 2).
 
+-spec set_protocol_options(ranch:ref(), any()) ->ok.
+set_protocol_options(Ref, ProtoOpts) ->
+    gen_server:call(?MODULE, {set_opts, Ref, ProtoOpts}).
+
+-spec get_protocol_options(ranch:ref()) -> any().
+get_protocol_options(Ref) ->
+    ets:lookup_element(?TAB, {opts, Ref}, 2).
+
+-spec count_connections(ranch:ref()) -> non_neg_integer().
+count_connections(Ref) ->
+    ranch_conns_sup:active_connections(get_connections_sup(Ref)).
 
 %% gen_server callback
-init() ->
+init([]) ->
 	ok.
 
 handle_call({set_new_listener_opts, Ref, MaxConns, Opts}, _From, State) ->
@@ -94,8 +105,7 @@ handle_call({set_connections_sup, Ref, Pid}, _From, State) ->
 				State#state{monitors = [{{MonitorRef, Pid}, Ref} | MonitorRef]}};
 		false ->
 			{reply, false, State}
-	end.
-	
+	end;
 handle_call({set_port, Ref, Port}, _From, State) ->
 	true = ets:insert(?TAB, {{port, Ref}, Port}),
 	{reply, ok, State};
@@ -104,3 +114,20 @@ handle_call({set_max_conns, Ref, MaxConns}, _From, State) ->
 	ConnsSup = get_connections_sup(Ref),
 	ConnsSup ! {set_max_conns, MaxConns},
 	{reply, ok, State};
+handle_call({set_opts, Ref, ProtoOpts}, _From, State) ->
+    ets:insert(?TAB, {{opts, Ref}, ProtoOpts}),
+    ConnsSup = get_connections_sup(Ref),
+    ConnsSup ! {set_opts, ProtoOpts},
+    {reply, ok, State}.
+
+handle_info(_Info, State) ->
+    {noreply, State}.
+
+handle_cast(_Msg, State) ->
+    {noreply, State}.
+
+code_change(_OldVsn, _Extra, State) ->
+    {ok, State}.
+
+terminate(_Reason, _State) ->
+    ok.
