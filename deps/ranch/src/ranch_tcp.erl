@@ -88,3 +88,70 @@ recv(Socket, Length, Timeout) ->
 send(Socket, Packet) ->
 	gen_tcp:send(Socket, Packet).
 
+-spec sendfile(inet:socket(), file:name_all() | file:fd())
+    -> {ok, non_neg_integer()} | {error, atom()}.
+sendfile(Socket, FileName) ->
+    sendfile(Socket, FileName, 0, 0, []).
+
+-spec sendfile(inet:socket(), file:name_all() | file:fd(), non_neg_integer(), non_neg_integer())
+    -> {ok, non_neg_integer()} | {error, atom()}.
+sendfile(Socket, File, Offset, Bytes) ->
+    sendfile(Socket, File, Offset, Bytes, []).
+
+-spec sendfile(inet:socket(), file:name_all() | file:fd(),
+    non_neg_integer(), non_neg_integer(),
+    [{chunk_size, non_neg_integer()}])
+    ->
+    {ok, non_neg_integer()} | {error, atom()}.
+sendfile(Socket, FileName, Offset, Bytes, Opts)
+        when is_list(FileName) orelse is_atom(FileName)
+             orelse is_binary(FileName) ->
+    case file:open(FileName, [read, raw, binary]) of
+        {ok, RawFile} ->
+            try sendfile(Socket, RawFile, Offset, Bytes, Opts) of
+                Result -> Result 
+            after
+                ok = file:close(RawFile)
+            end;
+        {error, _} = Error ->
+            Error
+    end;
+sendfile(Socket, RawFile, Offset, Bytes, Opts) ->
+    Opts2 = case Opts of
+                [] -> [{chunk_size, 16#1FFF}];
+                _ -> Opts
+            end,
+    try file:sendfile(RawFile, Socket, Offset, Bytes, Opts2) of
+        Result -> Result
+    catch
+        error:{badmatch, {error, enotconn}} ->
+            {error, closed}
+    end.
+
+-spec setopts(inet:socket(), list()) -> ok | {error, atom()}.
+setopts(Socket, Opts) ->
+    inet:setopts(Socket, Opts).
+                         
+-spec controlling_process(inet:socket(), pid())
+    -> ok | {error, closed | not__owner | atom()}.
+controlling_process(Socket, Pid) ->
+    gen_tcp:controlling_process(Socket, Pid).
+
+-spec peername(inet:socket())
+    -> {ok, {inet:ip_address(), inet:port_number()}} | {error ,atom()}.
+peername(Socket) ->
+    inet:peername(Socket).
+
+-spec socketname(inet:socket())
+    -> {ok, {inet:ip_address(), inet:port_number()}} | {error, atom()}.
+socketname(Socket) ->
+    inet:socketname(Socket).
+
+-spec shutdown(inet:socket(), read | write | read_write)
+    -> ok | {error, atom()}.
+shutdown(Socket, How) ->
+    gen_tcp:shutdown(Socket, How).
+
+-spec close(inet:socket()) -> ok.
+close(Socket) ->
+    gen_tcp:close(Socket).
