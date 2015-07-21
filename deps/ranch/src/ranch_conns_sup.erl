@@ -6,7 +6,7 @@
 -export([active_connections/1]).
 
 %% Supervisor internals
--export([init/7]),
+-export([init/7]).
 -export([system_continue/3]).
 -export([system_terminate/4]).
 -export([system_code_change/4]).
