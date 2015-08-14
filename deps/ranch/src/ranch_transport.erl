@@ -42,7 +42,7 @@
 
 -callback peername(socket())
 	-> {ok, {inet:ip_address(), inet:port_number()}} | {error, atom()}.
--callback socketname(socket())
+-callback sockname(socket())
 	-> {ok, {inet:ip_address(), inet:port_number()}} | {error, atom()}.
 	   
 -callback shutdown(socket(), read | write | read_write)

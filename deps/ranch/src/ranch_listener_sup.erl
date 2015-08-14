@@ -8,7 +8,7 @@
     -> {ok, pid()}.
 start_link(Ref, NbAcceptors, Transport, TransOpts, Protocol, ProtoOpts) ->
     MaxConns = proplists:get_value(max_connections, TransOpts, 1024),
-    ranch_server:set_new_listener(Ref, MaxConns, ProtoOpts),
+    ranch_server:set_new_listener_opts(Ref, MaxConns, ProtoOpts),
     supervisor:start_link(?MODULE, {
         Ref, NbAcceptors, Transport, TransOpts, Protocol}).
 

@@ -19,7 +19,7 @@
 -export([setopts/2]).
 -export([controlling_process/2]).
 -export([peername/1]).
--export([socketname/1]).
+-export([sockname/1]).
 -export([shutdown/2]).
 -export([close/1]).
 
@@ -142,10 +142,10 @@ controlling_process(Socket, Pid) ->
 peername(Socket) ->
     inet:peername(Socket).
 
--spec socketname(inet:socket())
+-spec sockname(inet:socket())
     -> {ok, {inet:ip_address(), inet:port_number()}} | {error, atom()}.
-socketname(Socket) ->
-    inet:socketname(Socket).
+sockname(Socket) ->
+    inet:sockname(Socket).
 
 -spec shutdown(inet:socket(), read | write | read_write)
     -> ok | {error, atom()}.

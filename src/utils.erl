@@ -1,6 +1,10 @@
 -module(utils).
 -compile([export_all]).
 
+-export([timer/2]).
+-export([record_to_proplist/2]).
+-export([new_paste_id/0]).
+
 record_to_proplist(Record, Fields) ->
     record_to_proplist(Record, Fields, '_record').
 
@@ -147,3 +151,12 @@ process_infos() ->
 	[Fun(erlang:process_info(P)) || P <- erlang:processes()],
 	file:close(Fd).
 	
+new_paste_id() ->
+	Initial = random:uniform(62) -1,
+	new_paste_id(<<Initial>>, 7).
+new_paste_id(Bin, 0) ->
+	Chars = <<"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"    >>,
+	<< <<(binary_part(Chars, B, 1))/binary>> || <<B>> <= Bin >>;
+new_paste_id(Bin, Rem) ->
+	Next = random:uniform(62) - 1,
+	new_paste_id(<<Bin/binary, Next>>, Rem - 1).

@@ -91,15 +91,17 @@ count_connections(Ref) ->
 
 %% gen_server callback
 init([]) ->
-	ok.
+	Monitors = [{{erlang:monitor(process, Pid), Pid}, Ref} ||
+		[Ref, Pid] <- ets:match(?TAB, {{conns_sup, '$1'}, '$2'})] ,
+	{ok, #state{monitors = Monitors}}.
 
 handle_call({set_new_listener_opts, Ref, MaxConns, Opts}, _From, State) ->
 	ets:insert(?TAB, {{max_conns, Ref}, MaxConns}),
-	ets:insert(?TAB, {opts, Ref}, Opts),
+	ets:insert(?TAB, {{opts, Ref}, Opts}),
 	{reply, ok, State};
 handle_call({set_connections_sup, Ref, Pid}, _From, State) ->
 	case ets:insert_new(?TAB, {{conns_sup, Ref}, Pid}) of
-		true ->
+		true  ->
 			MonitorRef = erlang:monitor(process, Pid),
 			{reply, true,
 				State#state{monitors = [{{MonitorRef, Pid}, Ref} | MonitorRef]}};

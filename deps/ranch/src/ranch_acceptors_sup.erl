@@ -20,7 +20,7 @@ init([Ref, NbAcceptors, Transport, TransOpts]) ->
 	{ok, {_, Port}} = Transport:sockname(LSocket),
 	ranch_server:set_port(Ref, Port),
 	Procs = [
-			{{acceptor, self(), N}, {ranch_acceptor, start,
+			{{acceptor, self(), N}, {ranch_acceptor, start_link,
 									 [LSocket, Transport, ConnsSup]},
 									 permanent, brutal_kill, worker, []}
 			|| N <- lists:seq(1, NbAcceptors)],
