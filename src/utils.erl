@@ -4,6 +4,7 @@
 -export([timer/2]).
 -export([record_to_proplist/2]).
 -export([new_paste_id/0]).
+-export([pmap/2]).
 
 record_to_proplist(Record, Fields) ->
     record_to_proplist(Record, Fields, '_record').
@@ -160,3 +161,10 @@ new_paste_id(Bin, 0) ->
 new_paste_id(Bin, Rem) ->
 	Next = random:uniform(62) - 1,
 	new_paste_id(<<Bin/binary, Next>>, Rem - 1).
+
+pmap(Fun, Args) ->
+	Parent = self(),
+	[receive {Pid, Result} -> Result end 
+	 || Pid <- [spawn(fun() ->
+					Parent ! {self(), Fun(Arg)} 
+				end) || Arg <- Args]].
