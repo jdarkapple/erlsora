@@ -3,6 +3,7 @@
 -behaviour(supervisor).
 
 %% API
+-export([start_link/0]).
 -export([start_link/2]).
 
 %% Supervisor callbacks
@@ -14,6 +15,8 @@
 %% ===================================================================
 %% API functions
 %% ===================================================================
+start_link() ->
+	ok.
 
 start_link(Mod, Args) ->
     supervisor:start_link(?MODULE, [Mod, Args]).

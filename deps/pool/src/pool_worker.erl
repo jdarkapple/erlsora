@@ -1,16 +1,12 @@
 %%%--------------------------------------------------------------------
-%%% Author        : zm
-%%% Email         : xinxizhaomin@163.com
+%%% Author        : 
+%%% Email         : 
 %%% Last modified : 2015-08-17 16:37
 %%% FileName      : pool_worker.erl
 %%% Description   :
 %%%--------------------------------------------------------------------
--module(pool_worder).
+-module(pool_worker).
 
--callback start_link(WorkerArgs) -> {ok, Pid} |
-									{error, {already_started, Pid}} |
-									{error, Reason} when
-	  WorkerArgs :: proplists:proplist(),
-	  Pid		 :: pid(),
-	  Reason	 :: term().
-
+-callback start_link(WorkerArgs :: proplists:proplist()) -> {ok, Pid :: pid()} |
+									{error, {already_started, Pid :: pid()}} |
+									{error, Reason :: term()}.
