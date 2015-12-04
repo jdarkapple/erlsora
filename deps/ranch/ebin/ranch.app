@@ -4,5 +4,7 @@
               {registered,[]},
               {applications,[kernel,stdlib]},
               {mod,{ranch_app,[]}},
-              {env,[{profile,true}]},
-              {modules,[ranch_app,ranch_sup]}]}.
+              {env,[]},
+              {modules,[ranch,ranch_acceptor,ranch_acceptors_sup,ranch_app,
+                        ranch_conns_sup,ranch_listener,ranch_server,ranch_sup,
+                        ranch_tcp]}]}.

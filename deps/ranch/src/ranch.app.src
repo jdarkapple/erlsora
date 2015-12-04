@@ -8,5 +8,5 @@
                   stdlib
                  ]},
   {mod, { ranch_app, []}},
-  {env, [{profile, true}]}
+  {env, []}
  ]}.

@@ -15,7 +15,6 @@
 %% API functions
 %% ===================================================================
 
--spec start_link() -> {ok, pid()}.
 start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
@@ -24,7 +23,7 @@ start_link() ->
 %% ===================================================================
 
 init([]) ->
-	ranch_server = ets:new(ranch_server, [ordered_set, public, named_table]),
-	Procs = ?CHILD(ranch_server, worker),
-    {ok, { {one_for_one, 5, 10}, [Procs]} }.
+    ranch_server = ets:new(ranch_server, [named_table, ordered_set, public]),
+    {ok, { {one_for_one, 5, 10}, [{ranch_server, {ranch_server, start_link, []},
+                                   permanent, 5000, worker, [ranch_server]}]} }.
 

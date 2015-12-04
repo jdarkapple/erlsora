@@ -1,35 +1,20 @@
 -module(ranch_acceptor).
 
--export([start_link/3]).
--export([loop/3]).
+-export([start_link/4]).
+-export([loop/4]).
 
+start_link(Ref, Transport, ConnSup, LSocket) ->
+    io:format("***** acceptor start ~n"),
+    Pid = spawn_link(?MODULE, loop, [Ref, Transport, ConnSup, LSocket]),
+    {ok, Pid}.
 
--spec start_link(inet:socekt(), module(), pid()) -> {ok, pid()}.
-start_link(LSocket, Transport, ConnsSup) ->
-	Pid = spawn_link(?MODULE, loop, [LSocket, Transport, ConnsSup]),
-	{ok, Pid}.
-
--spec loop(inet:socket(), module(), pid()) -> no_return().
-loop(LSocket, Transport, ConnsSup) ->
-	_ = case Transport:accept(LSocket, infinity) of
-			{ok, CSocket} ->
-				Transport:controlling_process(CSocket, ConnsSup),
-
-				ranch_conns_sup:start_protocol(ConnsSup, CSocket);
-			{error, emfile} ->
-				receive after 100 -> ok end;
-			{error, Reason} when Reason =/= closed ->
-				ok
-		end,
-	flush(),
-	?MODULE:loop(LSocket, Transport, ConnsSup).
-
-flush() ->
-	receive Msg ->
-				error_logger:error_msg(
-				  "Ranch acceptor receive unexpected message: ~p~n",
-				  [Msg]),
-				flush()
-	after 0 ->
-			  ok
-	end.
+loop(Ref, Transport, ConnSup, LSocket) ->
+    case Transport:accept(LSocket, infinity) of
+        {ok, Socket} ->
+            Transport:controlling_process(Socket, ConnsSup),
+            ranch_conns_sup:start_protocol(Socket),
+            io:format("**** get a connect by:~p", [self()]);
+        _ ->
+            error
+    end, 
+    loop(Ref, Transport, ConnSup, LSocket).

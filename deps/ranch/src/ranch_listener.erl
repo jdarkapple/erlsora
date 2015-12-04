@@ -1,9 +1,9 @@
--module(ranch_acceptors_sup).
+-module(ranch_listener).
 
 -behaviour(supervisor).
 
 %% API functions
--export([start_link/4]).
+-export([start_link/6]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -22,8 +22,8 @@
 %% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-start_link(Ref, NbAcceptors, Transport, TransOpts) ->
-    supervisor:start_link(?MODULE, [Ref, NbAcceptors, Transport, TransOpts]).
+start_link(Ref, NbAcceptors, Transport, TransOpts, Protocol, ProtOpts) ->
+    supervisor:start_link(?MODULE, [Ref, NbAcceptors, Transport, TransOpts, Protocol, ProtOpts]).
 
 %%%===================================================================
 %%% Supervisor callbacks
@@ -42,22 +42,16 @@ start_link(Ref, NbAcceptors, Transport, TransOpts) ->
 %%                     {error, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([Ref, NbAcceptors, Transport, TransOpts]) ->
-    ConnSup = ranch_server:get_connection_sup(Ref),
-    LSocket = case proplists:get_value(socket, TransOpts) of
-                  undefined ->
-                      {ok, Socket} = Transport:listen(TransOpts),
-                      Socket;
-                  Socket ->
-                      Socket
-              end,
-    {ok, {_, Port}} = Transport:sockname(LSocket),
-    ranch_server:set_port(Ref, Port),
-    io:format("begin to start acceptor~n"),
-    Acceptors = [{{acceptor, N, self()}, {ranch_acceptor, start_link, [Ref, Transport, ConnSup, LSocket]},
-                 permanent, brutal_kill, worker, []}
-                || N <- lists:seq(1, NbAcceptors)],
-    {ok, {{one_for_one, 5, 10}, Acceptors}}.
+init([Ref, NbAcceptors, Transport, TransOpts, Protocol, ProtOpts]) ->
+    MaxConns = proplists:get_value(max_connections, TransOpts, 1000),
+    ok = ranch_server:set_new_listener(Ref, MaxConns, ProtOpts),
+    Children = [{ranch_conns_sup,
+                 {ranch_conns_sup, start_link, [Ref, NbAcceptors, Transport, MaxConns, Protocol, ProtOpts]},
+                permanent, 5000, worker, [ranch_conns_sup]},
+                {ranch_acceptors_sup,
+                 {ranch_acceptors_sup, start_link, [Ref, NbAcceptors, Transport, TransOpts]},
+                permanent, 5000, worker, [ranch_acceptors_sup]}],
+    {ok, {{rest_for_one, 5, 10}, Children}}.
 
 %%%===================================================================
 %%% Internal functions
