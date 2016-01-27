@@ -2,6 +2,8 @@
 
 -export([test/0]).
 -export([test_chinese/0]).
+-export([rec/0]).
+
 high() ->
     process_flag(priority, high),
     high(30).
@@ -29,3 +31,6 @@ test_chinese() ->
 
 test_vim()->
 	hehe.
+
+rec() ->
+    rec().

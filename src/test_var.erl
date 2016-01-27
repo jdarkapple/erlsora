@@ -6,5 +6,6 @@ test() ->
 	Var.
 
 sum({a, N}, Result) ->
+    a.
 	
 

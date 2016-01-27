@@ -168,3 +168,41 @@ pmap(Fun, Args) ->
 	 || Pid <- [spawn(fun() ->
 					Parent ! {self(), Fun(Arg)} 
 				end) || Arg <- Args]].
+
+-spec pid_to_tuple(Pid :: pid()) -> tuple().
+pid_to_tuple(Pid) ->
+    List = erlang:pid_to_list(Pid),
+    [[$< | H], M, T] = string:tokens(List, "."),
+    {list_to_integer(H), list_to_integer(M), list_to_integer(lists:droplast(T))}.
+
+get_statename(Pid) ->
+    hd([Name || L=[_|_] <- element(4, sys:get_status(Pid)),
+                Data=[_|_] <- [proplists:get_value(data, L)],
+                Name <- [proplists:get_value("StateName", Data, 0)],
+                is_atom(Name)]).
+
+wait_until(Fun, _, 0) -> error({timeout, Fun});
+wait_until(Fun, Interval, Tries) ->
+    case Fun() of
+        true -> ok;
+        false ->
+            timer:sleep(Interval),
+            wait_until(Fun, Interval, Tries - 1)
+    end.
+
+ascii_tolower(B) ->
+    iolist_to_binary(ascii_tolower_s(binary_to_list(B))).
+
+ascii_tolower_s([C | Cs]) when C >= $A , C =< $Z ->
+    [C + ($a - $A) | ascii_tolower_s(Cs)];
+ascii_tolower_s([C | Cs]) ->
+    [C | ascii_tolower_s(Cs)];
+ascii_tolower_s([]) ->
+    [].
+
+test_run_time() ->
+    erlang:statistics(wall_clock),
+    lists:seq(1, 1000) ++ lists:seq(1, 1000),
+    T = {_, Time} = erlang:statistics(wall_clock),
+    io:format("~p~n", [T]).
+    

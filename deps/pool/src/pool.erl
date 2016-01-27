@@ -44,8 +44,8 @@
           waiting           :: pid_queue(),
           monitors          :: ets:tid(),
           size = 5          :: non_neg_integer(),
-          overflow = 0      :: non_neg_integer,
-          max_overflow = 10 :: non_neg_integer,
+          overflow = 0      :: non_neg_integer(),
+          max_overflow = 10 :: non_neg_integer(),
           strategy = lifo   :: lifo | fifo}).
 
 -spec checkout(Pool :: pool()) -> pid().
@@ -71,7 +71,7 @@ checkout(Pool, Block, Timeout) ->
 
 -spec checkin(Pool :: pool(), Worker :: pid()) -> ok.
 checkin(Pool, Worker) when is_pid(Worker) ->
-    gen_server:cast(Pool, {check, Worker}).
+    gen_server:cast(Pool, {checkin, Worker}).
 
 -spec transaction(Pool :: pool(),
                   Fun :: fun((Worker :: pid()) -> any())) -> any().
@@ -174,7 +174,7 @@ handle_call({checkout, CRef, Block}, {FromPid, _} = From, State) ->
             true = ets:insert(Monitors, {Pid, CRef, MRef}),
             {reply, Pid, State#state{ overflow = Overflow + 1}};
         [] when Block =:= flase ->
-            {reply, null, State};
+            {reply, full, State};
         [] ->
             MRef = erlang:monitor(process, FromPid),
             Waiting = queue:in({From, CRef, MRef}, State#state.waiting),
@@ -192,6 +192,7 @@ handle_call(_Msg, _From, State) ->
     Reply = {error, invalid_message},
     {reply, Reply, State}.
 
+%% 调用线程池内进程的那个进程挂掉时发送的消息
 handle_info({'DOWN', MRef, _, _, _}, State) ->
     case ets:match(State#state.monitors, {'$1', '_', MRef}) of
         [[Pid]] ->
@@ -199,6 +200,7 @@ handle_info({'DOWN', MRef, _, _, _}, State) ->
             NewState = handle_checkin(Pid, State),
             {noreply, NewState};
         [] ->
+            %% 因为调用进程挂掉了，需要从等待的队列中移除
             Waiting = queue:filter(fun({_, _, R}) -> R =/= MRef end, State#state.waiting),
             {noreply, State#state{ waiting = Waiting }}
     end;
@@ -308,7 +310,7 @@ handle_checkin(Pid, #state{ supervisor = Sup,
         {empty, Empty} ->
             Workers = case Strategy of
                           lifo -> [Pid | State#state.workers];
-                          filo -> State#state.workers ++ [Pid]
+                          fifo -> State#state.workers ++ [Pid]
                       end,
             State#state{ workers  = Workers,
                          waiting  = Empty,
